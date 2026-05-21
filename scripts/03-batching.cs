@@ -47,7 +47,7 @@ using Azure.Messaging.ServiceBus;
 
 await using var client = new ServiceBusClient(Config.ConnectionString);
 await using var sender = client.CreateSender(Config.QueueName);
-
+Console.WriteLine($"Queue: {Config.QueueName}");
 
 // ---------------------------------------------------------------------------
 // 1) Build 5,000 messages to demonstrate batching at scale
