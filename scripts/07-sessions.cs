@@ -82,7 +82,8 @@ Console.WriteLine("Sent 3 messages each for alice and bob (interleaved).\n");
 // 2) Pull-based session receive — accept whichever session the broker
 //    hands us first, drain it in order, close it.
 //
-//    AcceptNextSessionAsync blocks until A session becomes available.
+//    AcceptNextSessionAsync blocks until a session becomes available, then
+//    locks that SessionId so no other receiver can see any of its messages.
 //    Alternatively, AcceptSessionAsync("alice") locks that specific one
 //    (waiting if it's currently held by someone else).
 // ---------------------------------------------------------------------------
