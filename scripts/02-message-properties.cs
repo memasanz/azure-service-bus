@@ -45,6 +45,7 @@
 
 using Azure.Messaging.ServiceBus;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 await using var client = new ServiceBusClient(Config.ConnectionString);
 await using var sender = client.CreateSender(Config.QueueName);
@@ -56,9 +57,9 @@ await using var sender = client.CreateSender(Config.QueueName);
 //    The body is JSON; the system properties give it routability and
 //    traceability; the application properties carry our business metadata.
 // ---------------------------------------------------------------------------
-var order = new { OrderId = 42, Customer = "acme", Total = 199.99m };
+var order = new Order(42, "acme", 199.99m);
 
-var msg = new ServiceBusMessage(JsonSerializer.Serialize(order))
+var msg = new ServiceBusMessage(JsonSerializer.Serialize(order, DemoJsonContext.Default.Order))
 {
     // MessageId — also used as the dedupe key by the broker (when enabled).
     MessageId     = order.OrderId.ToString(),
@@ -137,3 +138,10 @@ await receiver.CompleteMessageAsync(received);
 // ---------------------------------------------------------------------------
 
 Console.WriteLine("\nDone. Next: 03-batching.cs");
+
+internal sealed record Order(int OrderId, string Customer, decimal Total);
+
+[JsonSerializable(typeof(Order))]
+internal partial class DemoJsonContext : JsonSerializerContext
+{
+}

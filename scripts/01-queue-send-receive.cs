@@ -58,6 +58,8 @@ await using var client = new ServiceBusClient(Config.ConnectionString);
 // A sender is bound to a single queue (or topic). Cheap to create.
 await using var sender = client.CreateSender(Config.QueueName);
 
+Console.WriteLine($"Queue: {Config.QueueName}");
+
 
 // ---------------------------------------------------------------------------
 // 1) Send a single message
@@ -137,5 +139,22 @@ await using var fast = client.CreateReceiver(Config.QueueName, new ServiceBusRec
 
 var m = await fast.ReceiveMessageAsync(TimeSpan.FromSeconds(5));
 Console.WriteLine($"Got (and already deleted): {m?.Body}");
+
+
+// ---------------------------------------------------------------------------
+// 5) Final cleanup — drain anything left in the queue
+//
+//    This uses ReceiveAndDelete intentionally so rerunning the demo starts
+//    from an empty queue even if older messages were still sitting there.
+// ---------------------------------------------------------------------------
+var drainedCount = 0;
+while (true)
+{
+    var leftover = await fast.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+    if (leftover is null) break;
+    drainedCount++;
+}
+
+Console.WriteLine($"Cleared {drainedCount} leftover message(s) from the queue.");
 
 Console.WriteLine("\nDone. Next: 02-message-properties.cs");
