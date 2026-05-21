@@ -1,75 +1,91 @@
-# Azure Service Bus — C# Notebook Walkthrough
+# Azure Service Bus — C# Walkthrough
 
-A progressive set of [Polyglot Notebooks](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.dotnet-interactive-vscode) (`.ipynb`, C# kernel) that teach the [`Azure.Messaging.ServiceBus`](https://learn.microsoft.com/dotnet/api/overview/azure/messaging.servicebus-readme) SDK from the basics up through advanced features.
+A progressive set of **.NET 10 file-based C# scripts** that teach the [`Azure.Messaging.ServiceBus`](https://learn.microsoft.com/dotnet/api/overview/azure/messaging.servicebus-readme) SDK from the basics up through advanced features.
 
-Each notebook is self-contained: it restores NuGet packages, reads a connection string from an environment variable, and demonstrates one concept at a time.
+Each script is a single `.cs` file you run with `dotnet run`. NuGet packages are declared inline via `#:package` directives — no project file needed per script.
+
+> **Why not Polyglot Notebooks?** Microsoft deprecated the Polyglot Notebooks VS Code extension and the underlying .NET Interactive runtime in early 2026. Their replacement guidance for C# is exactly this: file-based apps in .NET 10.
 
 ## Prerequisites
 
-- [.NET SDK 8.0+](https://dotnet.microsoft.com/download)
-- [VS Code](https://code.visualstudio.com/) with the **Polyglot Notebooks** extension
-- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (`az`) — logged in via `az login`
+- **[.NET SDK 10.0+](https://dotnet.microsoft.com/download)** — required for the file-based-app feature (`dotnet run file.cs`)
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) — logged in via `az login`
 - An Azure subscription
+- VS Code with the C# Dev Kit (optional but nice for IntelliSense on `.cs` files)
+
+Check your SDK:
+
+```powershell
+dotnet --list-sdks
+```
+
+You need a `10.x.x` entry.
 
 ## 1. Deploy the Service Bus infrastructure
 
-The `infra/` folder contains a Bicep template that provisions everything the notebooks need:
+The `infra/` folder contains a Bicep template that provisions:
 
 - **Service Bus namespace** (Standard tier)
 - Queues: `demo-queue`, `demo-sessions` (session-enabled), `demo-dlq`
 - Topic: `demo-topic` with subscriptions `all`, `high-priority` (SQL filter), `orders` (correlation filter)
-
-Deploy it with PowerShell:
 
 ```powershell
 cd infra
 ./deploy.ps1 -ResourceGroup rg-sbdemo -Location eastus -NamespaceName sbdemo$((Get-Random))
 ```
 
-Or directly with the Azure CLI:
+When the deployment finishes, `deploy.ps1` writes a `.env` file at the repo root with the connection string and namespace hostname. The scripts read it automatically.
 
-```bash
-az group create -n rg-sbdemo -l eastus
-az deployment group create \
-  -g rg-sbdemo \
-  -f infra/main.bicep \
-  -p namespaceName=sbdemo$RANDOM
+If you'd rather deploy manually, copy `.env.example` to `.env` and fill in the values yourself.
+
+## 2. Run the scripts
+
+From the repo root:
+
+```powershell
+dotnet run scripts/00-setup.cs
+dotnet run scripts/01-queue-send-receive.cs
+# ... and so on
 ```
 
-The `deploy.ps1` script writes a **`.env` file at the repo root** with the connection string and namespace hostname. The notebooks read it automatically via the shared `Config` helper — no extra setup needed.
+The first run on a fresh machine will restore NuGet packages — give it a minute.
 
-If you deployed some other way (or want to use an existing namespace), copy `.env.example` to `.env` and fill in the values:
+| # | Script | Concept |
+|---|--------|---------|
+| 00 | `00-setup.cs` | Verify `.env`, list namespace entities |
+| 01 | `01-queue-send-receive.cs` | Send / receive, PeekLock vs ReceiveAndDelete |
+| 02 | `02-message-properties.cs` | System + application properties |
+| 03 | `03-batching.cs` | `ServiceBusMessageBatch`, size limits |
+| 04 | `04-processor.cs` | `ServiceBusProcessor`, concurrency, error handler |
+| 05 | `05-dead-letter.cs` | DLQ semantics, resubmit |
+| 06 | `06-scheduled-deferred.cs` | Scheduled & deferred messages |
+| 07 | `07-sessions.cs` | Session-enabled queues, FIFO per session |
+| 08 | `08-topics-subscriptions.cs` | Pub/sub, SQL & correlation filters |
+| 09 | `09-transactions.cs` | Atomic send + complete via `TransactionScope` |
+| 10 | `10-managed-identity.cs` | `DefaultAzureCredential`, RBAC |
 
+Each script begins with a block comment explaining what it demonstrates; read the source as you go — the narrative lives with the code.
+
+## 3. How the scripts share configuration
+
+Every script declares two directives at the top:
+
+```csharp
+#:package Azure.Messaging.ServiceBus@7.18.2
+#:project ../src/SbDemo.Shared/SbDemo.Shared.csproj
 ```
-SERVICEBUS_CONNECTION_STRING=Endpoint=sb://...;SharedAccessKey=...
-SERVICEBUS_NAMESPACE=<namespace>.servicebus.windows.net
-```
 
-The helper also falls back to real process environment variables if you prefer to set them that way. `.env` is in `.gitignore` so it won't be committed.
+- `#:package` pulls in NuGet packages.
+- `#:project` references the **`SbDemo.Shared`** class library, which exposes:
+  - `Config.ConnectionString` / `Config.FullyQualifiedNamespace` — read from `.env` or process env vars
+  - `Config.QueueName`, `Config.TopicName`, etc. — constants for the entities the Bicep deploys
+  - `Config.DotEnvPath` — which `.env` file (if any) was loaded
 
-(Notebook `10-managed-identity.ipynb` only needs `SERVICEBUS_NAMESPACE`.)
+`.env` parsing walks up from the current directory, so you can run scripts from anywhere in the repo.
 
-## 2. Open the notebooks
+## 4. Clean up
 
-Open this folder in VS Code and run the notebooks in order:
-
-| # | Notebook | Concept |
-|---|----------|---------|
-| 00 | `00-setup.ipynb` | Deploy infra, verify connection |
-| 01 | `01-queue-send-receive.ipynb` | Send / receive, PeekLock vs ReceiveAndDelete |
-| 02 | `02-message-properties.ipynb` | System & application properties |
-| 03 | `03-batching.ipynb` | `ServiceBusMessageBatch`, size limits |
-| 04 | `04-processor.ipynb` | `ServiceBusProcessor`, concurrency, error handler |
-| 05 | `05-dead-letter.ipynb` | DLQ semantics, resubmit |
-| 06 | `06-scheduled-deferred.ipynb` | Scheduled & deferred messages |
-| 07 | `07-sessions.ipynb` | Session-enabled queues, FIFO per session |
-| 08 | `08-topics-subscriptions.ipynb` | Pub/sub, SQL & correlation filters |
-| 09 | `09-transactions.ipynb` | Atomic send + complete via `TransactionScope` |
-| 10 | `10-managed-identity.ipynb` | `DefaultAzureCredential`, RBAC |
-
-## 3. Clean up
-
-```bash
+```powershell
 az group delete -n rg-sbdemo --yes --no-wait
 ```
 
@@ -77,8 +93,17 @@ az group delete -n rg-sbdemo --yes --no-wait
 
 ```
 servicebus-demo/
-├── infra/                # Bicep + deploy script
-├── notebooks/            # Polyglot notebooks (C#)
-├── src/shared/           # Helpers shared across notebooks via #load
-└── README.md
+├── .env                  # created by deploy.ps1 (gitignored)
+├── .env.example
+├── infra/
+│   ├── main.bicep
+│   ├── main.parameters.json
+│   └── deploy.ps1
+├── scripts/              # .NET 10 file-based C# scripts (run with `dotnet run`)
+│   ├── 00-setup.cs
+│   └── 01-...10-...cs
+└── src/
+    └── SbDemo.Shared/    # tiny class library shared by all scripts
+        ├── Config.cs
+        └── SbDemo.Shared.csproj
 ```
