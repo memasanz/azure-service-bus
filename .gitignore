@@ -1,0 +1,31 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Local env / secrets
+.env
+*.env
+local.settings.json
+appsettings.Development.json
+**/secrets.json
+
+# IDE
+.vs/
+.vscode/*.local.json
+.idea/
+
+# Azure
+.azure/
+
+# OS
+.DS_Store
+Thumbs.db
