@@ -1,6 +1,3 @@
-#:package Azure.Messaging.ServiceBus@7.18.2
-#:package Azure.Messaging.ServiceBus.Administration@7.18.2
-#:project ../src/SbDemo.Shared/SbDemo.Shared.csproj
 
 /*
  * ============================================================================
