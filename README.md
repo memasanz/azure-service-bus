@@ -36,14 +36,18 @@ az deployment group create \
   -p namespaceName=sbdemo$RANDOM
 ```
 
-The deployment outputs a **primary connection string**. Set it as an environment variable so the notebooks can pick it up:
+The `deploy.ps1` script writes a **`.env` file at the repo root** with the connection string and namespace hostname. The notebooks read it automatically via the shared `Config` helper — no extra setup needed.
 
-```powershell
-$env:SERVICEBUS_CONNECTION_STRING = "<paste connection string here>"
-$env:SERVICEBUS_NAMESPACE         = "<namespace>.servicebus.windows.net"
+If you deployed some other way (or want to use an existing namespace), copy `.env.example` to `.env` and fill in the values:
+
+```
+SERVICEBUS_CONNECTION_STRING=Endpoint=sb://...;SharedAccessKey=...
+SERVICEBUS_NAMESPACE=<namespace>.servicebus.windows.net
 ```
 
-(For notebook `10-managed-identity.ipynb` you only need `SERVICEBUS_NAMESPACE`.)
+The helper also falls back to real process environment variables if you prefer to set them that way. `.env` is in `.gitignore` so it won't be committed.
+
+(Notebook `10-managed-identity.ipynb` only needs `SERVICEBUS_NAMESPACE`.)
 
 ## 2. Open the notebooks
 
