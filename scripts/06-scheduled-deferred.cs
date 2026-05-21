@@ -31,7 +31,7 @@ await receiver.DeferMessageAsync(firstPass);
 Console.WriteLine($"Deferred {firstPass.MessageId} (seq={deferredSeq})");
 
 var none = await receiver.ReceiveMessageAsync(TimeSpan.FromSeconds(2));
-Console.WriteLine($"Normal receive saw: {(none?.Body ?? "(nothing)")}");
+Console.WriteLine($"Normal receive saw: {(none?.Body?.ToString() ?? "(nothing)")}");
 
 var deferred = await receiver.ReceiveDeferredMessageAsync(deferredSeq);
 Console.WriteLine($"Got back: {deferred!.MessageId}  body={deferred.Body}");

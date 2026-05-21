@@ -8,18 +8,30 @@ Each script is a single `.cs` file you run with `dotnet run`. NuGet packages are
 
 ## Prerequisites
 
-- **[.NET SDK 10.0+](https://dotnet.microsoft.com/download)** — required for the file-based-app feature (`dotnet run file.cs`)
+- **[.NET SDK 10.0+](https://dotnet.microsoft.com/download/dotnet/10.0)** — required for the file-based-app feature (`dotnet run file.cs`)
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) — logged in via `az login`
 - An Azure subscription
 - VS Code with the C# Dev Kit (optional but nice for IntelliSense on `.cs` files)
 
-Check your SDK:
+### Install .NET 10
+
+The scripts use **file-based apps**, a feature introduced in .NET 10 (Nov 2025, LTS through Nov 2028). It installs side-by-side with older SDKs without breaking anything.
+
+```powershell
+winget install Microsoft.DotNet.SDK.10
+```
+
+Or download the installer from <https://dotnet.microsoft.com/download/dotnet/10.0>.
+
+Verify (open a new shell after install):
 
 ```powershell
 dotnet --list-sdks
 ```
 
-You need a `10.x.x` entry.
+You should see a `10.x.x` entry alongside any older versions.
+
+> **Why .NET 10 specifically?** Earlier SDKs require a `.csproj` to run code. The `#:package` / `#:project` directives at the top of each script — and the ability to `dotnet run scripts/01-...cs` against a single file — only exist in .NET 10. The C# language itself is unchanged.
 
 ## 1. Deploy the Service Bus infrastructure
 

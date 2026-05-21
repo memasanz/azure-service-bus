@@ -33,7 +33,7 @@ processor.ProcessMessageAsync += async args =>
 
 processor.ProcessErrorAsync += args =>
 {
-    Console.WriteLine($"ERROR from {args.EntitySource}: {args.Exception.Message}");
+    Console.WriteLine($"ERROR from {args.EntityPath}: {args.Exception.Message}");
     return Task.CompletedTask;
 };
 
