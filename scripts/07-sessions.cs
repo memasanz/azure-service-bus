@@ -63,17 +63,21 @@ await using var sender = client.CreateSender(Config.SessionQueueName);
 //
 //    Although we send them mixed in (A,B,A,B,A,B), the broker stores them
 //    such that "all alice messages stay in alice's FIFO stream" and same
-//    for bob. Watch the receive output below — alice's messages come out
-//    A1, A2, A3 in order, never interleaved with bob's.
+//    for bob. We also stamp CorrelationId to show that trace metadata is
+//    separate from SessionId: CorrelationId links related messages, while
+//    SessionId controls FIFO/exclusive processing.
+//
+//    Watch the receive output below — alice's messages come out A1, A2, A3
+//    in order, never interleaved with bob's.
 // ---------------------------------------------------------------------------
 await sender.SendMessagesAsync(new[]
 {
-    new ServiceBusMessage("A1") { SessionId = "alice" },
-    new ServiceBusMessage("B1") { SessionId = "bob"   },
-    new ServiceBusMessage("A2") { SessionId = "alice" },
-    new ServiceBusMessage("B2") { SessionId = "bob"   },
-    new ServiceBusMessage("A3") { SessionId = "alice" },
-    new ServiceBusMessage("B3") { SessionId = "bob"   },
+    new ServiceBusMessage("A1") { SessionId = "alice", CorrelationId = "chat-alice" },
+    new ServiceBusMessage("B1") { SessionId = "bob",   CorrelationId = "chat-bob"   },
+    new ServiceBusMessage("A2") { SessionId = "alice", CorrelationId = "chat-alice" },
+    new ServiceBusMessage("B2") { SessionId = "bob",   CorrelationId = "chat-bob"   },
+    new ServiceBusMessage("A3") { SessionId = "alice", CorrelationId = "chat-alice" },
+    new ServiceBusMessage("B3") { SessionId = "bob",   CorrelationId = "chat-bob"   },
 });
 Console.WriteLine("Sent 3 messages each for alice and bob (interleaved).\n");
 
@@ -97,7 +101,7 @@ while (true)
 {
     var msg = await sessionReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(2));
     if (msg is null) break;
-    Console.WriteLine($"  [{sessionReceiver.SessionId}] {msg.Body}  (seq={msg.SequenceNumber})");
+    Console.WriteLine($"  [{sessionReceiver.SessionId}] {msg.Body}  (corr={msg.CorrelationId}, seq={msg.SequenceNumber})");
     await sessionReceiver.CompleteMessageAsync(msg);
 }
 
